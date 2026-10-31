@@ -6,7 +6,7 @@
     "require": {
         "php": "^8.5",
         "survos/kit-bundle": "^2.41",
-        "survos/mapillary": "^0.1 || dev-main",
+        "survos/mapillary": "^2.45",
         "symfony/config": "^8.1",
         "symfony/console": "^8.1",
         "symfony/dependency-injection": "^8.1",
