@@ -6,8 +6,11 @@ namespace Survos\MapillaryBundle\Command;
 
 use Survos\Mapillary\Exception\MapillaryException;
 use Survos\Mapillary\MapillaryClientInterface;
+use Survos\Mapillary\Model\Image;
+use Survos\Mapillary\Model\ImagePage;
 use Survos\Mapillary\Request\BoundingBox;
 use Survos\Mapillary\Request\ImageSearch;
+use Survos\Mapillary\Request\NearbySearch;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Attribute\MapInput;
 use Symfony\Component\Console\Command\Command;
@@ -34,6 +37,34 @@ final readonly class MapillaryService
 
             return Command::FAILURE;
         }
+
+        return $this->display($io, $page);
+    }
+
+    #[AsCommand('mapillary:images:nearby', 'Find nearby images within 50 meters; display returned panoramas by default')]
+    public function nearby(SymfonyStyle $io, #[MapInput] NearbySearchInput $input): int
+    {
+        try {
+            $page = $this->client->nearbyImages(new NearbySearch($input->latitude, $input->longitude, $input->radius, $input->limit));
+        } catch (\InvalidArgumentException $error) {
+            $io->error($error->getMessage());
+
+            return Command::INVALID;
+        } catch (MapillaryException $error) {
+            $io->error($error->getMessage());
+
+            return Command::FAILURE;
+        }
+        if (!$input->includeFlat) {
+            $io->note(sprintf('Filtering panoramas from %d nearby candidates; this is not a complete inventory.', count($page->images)));
+            $page = new ImagePage(array_values(array_filter($page->images, static fn (Image $image): bool => $image->isPano)), null, $page->possiblyTruncated);
+        }
+
+        return $this->display($io, $page);
+    }
+
+    private function display(SymfonyStyle $io, ImagePage $page): int
+    {
         $rows = [];
         foreach ($page->images as $image) {
             $point = $image->computedGeometry ?? $image->geometry;
@@ -50,7 +81,7 @@ final readonly class MapillaryService
         $io->table(['Image', 'Captured', 'Type', 'Latitude, longitude', 'Creator', 'Original dimensions', 'Source'], $rows);
         $io->success(sprintf('Returned %d images.', count($page->images)));
         if ($page->possiblyTruncated) {
-            $io->note('The result reached the requested limit. Bounding-box searches do not support pagination; this is not a complete inventory.');
+            $io->note('The candidate result reached the requested limit. This bounded search is not a complete inventory.');
         }
 
         return Command::SUCCESS;

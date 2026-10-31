@@ -32,3 +32,5 @@ The command returns source links and photographer credits, not credentials or si
 Install published packages normally, then run `php ../mono/link .` from the consuming project for local source linking; do not add path repositories. No deployment is involved.
 
 Tests: use the mono root PHPUnit runner with `-c bu/mapillary-bundle/phpunit.xml.dist`, or install package dependencies and run its PHPUnit. The minimal Symfony kernel test verifies service wiring and command execution offline.
+
+Nearby search: `nearbyImages(new NearbySearch(47.507, 19.046, radius: 50, limit: 20))` returns at most 100 candidates within 50 meters, ranked by the server with panorama preference. The API does not document a panorama-only filter for radius requests. The command `mapillary:images:nearby 47.507 19.046 --limit=20` filters the returned candidates locally to panoramas; `--include-flat` shows all. Neither radius nor bbox samples guarantee completeness.

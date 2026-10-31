@@ -33,6 +33,9 @@ final class BundleTest extends TestCase
             self::assertStringContainsString('photographer', $command->getDisplay());
             self::assertStringNotContainsString('MLY|fixture', $command->getDisplay());
             self::assertStringNotContainsString('signed-secret', $command->getDisplay());
+            $nearby = new CommandTester($application->find('mapillary:images:nearby'));
+            self::assertSame(0, $nearby->execute(['latitude' => 47.507, 'longitude' => 19.046]));
+            self::assertStringContainsString('Returned 1 images', $nearby->getDisplay());
         } finally {
             $kernel->shutdown();
         }
@@ -75,7 +78,7 @@ final class MapillaryTestKernel extends Kernel
 
     public static function mockHttp(): MockHttpClient
     {
-        return new MockHttpClient(new MockResponse(json_encode(['data' => [[
+        return new MockHttpClient(static fn () => new MockResponse(json_encode(['data' => [[
             'id' => '123', 'captured_at' => 1700000000123, 'is_pano' => true,
             'creator' => ['id' => '99', 'username' => 'photographer'],
             'thumb_original_url' => 'https://cdn.example/signed-secret',
